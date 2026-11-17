@@ -1,3 +1,9 @@
 -- Initial schema is applied idempotently by SQLAlchemy metadata.create_all.
 -- Authoritative models: src/models/entities.py (relations, dependencies, reports,
--- audit_logs and users). Dependencies/report snapshots are persisted as MySQL JSON.
+-- drills, drill_assignments, drill_changes, relation_locks, audit_logs and users).
+-- Dependencies/report snapshots/drill plans are persisted as MySQL JSON.
+-- Rehearsal tables use physical names so an operator can inspect and query them:
+--   drill_src_<relation_id>       original commission table (_row_id PK), never dropped
+--   drill_t_<drill_id>_<n>        one real table per decomposition relation (_src_key PK)
+-- drill_assignments.relation_id is the primary key that allows only one effective plan
+-- per commission table; relation_locks serializes writes/migration/switch.

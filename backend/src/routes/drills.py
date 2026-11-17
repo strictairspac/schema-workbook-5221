@@ -1,0 +1,30 @@
+from fastapi import APIRouter,Depends,Query
+from src.config.database import db_session
+from src.utils.security import current,writer
+from src.schemas.drill import DrillInput,DrillRowInput
+from src.services import drills as service
+router=APIRouter()
+@router.get('/drills')
+def listing(db=Depends(db_session),user=Depends(current)):return service.listing(db)
+@router.post('/drills',status_code=201)
+def create(data:DrillInput,db=Depends(db_session),user=Depends(writer)):return service.create(db,data,user)
+@router.get('/drills/{ident}')
+def detail(ident:int,db=Depends(db_session),user=Depends(current)):return service.detail(db,ident)
+@router.get('/drills/{ident}/rows')
+def rows(ident:int,view:str=Query('current',pattern='^(current|source|new)$'),db=Depends(db_session),user=Depends(current)):return service.rows(db,ident,view)
+@router.post('/drills/{ident}/rows',status_code=201)
+def create_row(ident:int,data:DrillRowInput,db=Depends(db_session),user=Depends(writer)):return service.mutate_row(db,ident,None,data.values,'create',user,cascade=data.cascade)
+@router.put('/drills/{ident}/rows/{key}')
+def update_row(ident:int,key:str,data:DrillRowInput,db=Depends(db_session),user=Depends(writer)):return service.mutate_row(db,ident,key,data.values,'update',user,cascade=data.cascade)
+@router.delete('/drills/{ident}/rows/{key}')
+def delete_row(ident:int,key:str,db=Depends(db_session),user=Depends(writer)):return service.mutate_row(db,ident,key,{},'delete',user)
+@router.get('/drills/{ident}/tables')
+def tables(ident:int,db=Depends(db_session),user=Depends(current)):return service.tables(db,ident)
+@router.post('/drills/{ident}/migrate')
+def migrate(ident:int,max_rows:int=Query(service.MAX_ROWS_PER_CALL,ge=1,le=service.MAX_ROWS_PER_CALL),db=Depends(db_session),user=Depends(writer)):return service.migrate(db,ident,user,max_rows)
+@router.post('/drills/{ident}/switch')
+def switch(ident:int,db=Depends(db_session),user=Depends(writer)):return service.switch(db,ident,user)
+@router.get('/drills/{ident}/compare')
+def compare(ident:int,db=Depends(db_session),user=Depends(current)):return service.compare(db,ident)
+@router.get('/drills/{ident}/changes')
+def changes(ident:int,db=Depends(db_session),user=Depends(current)):return service.changes(db,ident)
